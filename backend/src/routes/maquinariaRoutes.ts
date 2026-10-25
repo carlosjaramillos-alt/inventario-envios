@@ -5,6 +5,7 @@ import { verificarRol } from '../middleware/permisos';
 
 const router = Router();
 
+// Proteger todas las rutas de maquinaria con JWT
 router.use(authenticateToken);
 
 router.get('/', getMaquinaria);

@@ -5,7 +5,7 @@ import { verificarRol } from '../middleware/permisos';
 
 const router = Router();
 
-// Todas las rutas de sedes requieren token JWT válido
+// Proteger todas las rutas de sedes con JWT
 router.use(authenticateToken);
 
 // Consultar sedes asignadas al usuario
