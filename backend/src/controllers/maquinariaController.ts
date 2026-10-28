@@ -28,19 +28,43 @@ export const getMaquinaria = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// Registrar una nueva máquina
+// Registrar una nueva máquina (Soporta placa, estado y múltiples fotos en arreglo)
 export const createMaquinaria = async (req: AuthRequest, res: Response) => {
     try {
-        const { codigo_interno, nombre, marca, modelo, serie, sede_id, horometro_actual } = req.body;
+        const { 
+            codigo_interno, 
+            nombre, 
+            marca, 
+            modelo, 
+            serie, 
+            placa, 
+            estado, 
+            foto_url, 
+            sede_id, 
+            horometro_actual 
+        } = req.body;
 
         if (!codigo_interno || !nombre) {
             return res.status(400).json({ error: 'Código interno y nombre son requeridos' });
         }
 
         const result = await pool.query(
-            `INSERT INTO maquinaria (codigo_interno, nombre, marca, modelo, serie, sede_id, horometro_actual)
-             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-            [codigo_interno, nombre, marca, modelo, serie, sede_id || null, horometro_actual || 0]
+            `INSERT INTO maquinaria (
+                codigo_interno, nombre, marca, modelo, serie, placa, estado, foto_url, sede_id, horometro_actual
+            )
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+            [
+                codigo_interno, 
+                nombre, 
+                marca || null, 
+                modelo || null, 
+                serie || null, 
+                placa || null, 
+                estado || 'Operativa', 
+                foto_url || [], // Guarda el arreglo de imágenes cargadas desde el frontend
+                sede_id || null, 
+                horometro_actual || 0
+            ]
         );
 
         res.status(201).json({
@@ -51,6 +75,7 @@ export const createMaquinaria = async (req: AuthRequest, res: Response) => {
         if (error.code === '23505') {
             return res.status(400).json({ error: 'El código interno de la máquina ya existe' });
         }
+        console.error('Error al crear maquinaria:', error);
         res.status(500).json({ error: 'Error al registrar la maquinaria' });
     }
 };

@@ -47,7 +47,7 @@ export const registrarTanqueo = async (req: AuthRequest, res: Response) => {
                          VALUES ($1, 'CONSUMO_ALTO', $2)`,
                         [
                             sede_id, 
-                            `Consumo anormalmente alto detected en la máquina ID ${maquinaria_id}: ${consumoPorHora.toFixed(2)} gal/hora.`
+                            `Consumo anormalmente alto detectado en la máquina ID ${maquinaria_id}: ${consumoPorHora.toFixed(2)} gal/hora.`
                         ]
                     );
                     alertaGenerada = true;
@@ -67,6 +67,43 @@ export const registrarTanqueo = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ error: 'Error al registrar el abastecimiento de combustible' });
     } finally {
         client.release();
+    }
+};
+
+// Consultar historial de tanqueos realizados
+export const getHistorialTanqueos = async (req: AuthRequest, res: Response) => {
+    try {
+        const { maquinaria_id, sede_id } = req.query;
+
+        let query = `
+            SELECT rc.*, m.codigo_interno as maquinaria_codigo, m.nombre as maquinaria_nombre, s.nombre as sede_nombre
+            FROM registro_combustible rc
+            LEFT JOIN maquinaria m ON rc.maquinaria_id = m.id
+            LEFT JOIN sedes s ON rc.sede_id = s.id
+        `;
+        const params: any[] = [];
+        const conditions: string[] = [];
+
+        if (maquinaria_id) {
+            params.push(maquinaria_id);
+            conditions.push(`rc.maquinaria_id = $${params.length}`);
+        }
+
+        if (sede_id) {
+            params.push(sede_id);
+            conditions.push(`rc.sede_id = $${params.length}`);
+        }
+
+        if (conditions.length > 0) {
+            query += ` WHERE ` + conditions.join(' AND ');
+        }
+
+        query += ` ORDER BY rc.creado_en DESC`;
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al consultar el historial de tanqueos' });
     }
 };
 
